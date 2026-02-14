@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 适配手机端 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>为你点菜 - 专属我俩的小菜单</title>
+    <style>
+        /* 全局样式，温柔风 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background-color: #f9f9f9;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #e64398;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        /* 添加新菜区域 */
+        .add-dish {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .add-dish input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .add-dish button {
+            padding: 10px 20px;
+            background-color: #e64398;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        /* 通用标题样式 */
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0 10px;
+            color: #333;
+        }
+        /* 菜品列表 */
+        .dish-list, .ordered-list {
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .dish-item, .ordered-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .dish-item:last-child, .ordered-item:last-child {
+            border-bottom: none;
+        }
+        .dish-item button {
+            padding: 5px 15px;
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .ordered-item {
+            color: #666;
+        }
+        /* 提示样式 */
+        .tip {
+            text-align: center;
+            color: #999;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>为你点菜 💖</h1>
+
+    <!-- 添加新菜品区域 -->
+    <div class="add-dish">
+        <input type="text" id="newDishInput" placeholder="输入新菜品名称（比如：番茄炒蛋）">
+        <button onclick="addNewDish()">添加新菜</button>
+    </div>
+
+    <!-- 菜品菜单区域 -->
+    <div class="dish-list">
+        <div class="title">🥢 菜品菜单</div>
+        <div id="dishListContainer"></div>
+    </div>
+
+    <!-- 已点菜品区域 -->
+    <div class="ordered-list">
+        <div class="title">✅ 已点菜品</div>
+        <div id="orderedListContainer"></div>
+    </div>
+
+    <div class="tip">💡 数据存在本地，刷新不丢 | 发给女朋友直接打开就能用</div>
+
+    <script>
+        // 初始化数据（从本地存储读取，没有就创建空数组）
+        let dishList = JSON.parse(localStorage.getItem('dishList')) || [];
+        let orderedList = JSON.parse(localStorage.getItem('orderedList')) || [];
+
+        // 页面加载时渲染列表
+        window.onload = function() {
+            renderDishList();
+            renderOrderedList();
+        };
+
+        // 1. 添加新菜品
+        function addNewDish() {
+            const input = document.getElementById('newDishInput');
+            const dishName = input.value.trim();
+            
+            if (!dishName) {
+                alert('请输入菜品名称呀～');
+                return;
+            }
+
+            // 新增菜品对象
+            const newDish = {
+                id: Date.now(), // 用时间戳做唯一ID
+                name: dishName
+            };
+
+            // 加入数组 + 存本地 + 清空输入框 + 重新渲染
+            dishList.push(newDish);
+            localStorage.setItem('dishList', JSON.stringify(dishList));
+            input.value = '';
+            renderDishList();
+            alert('添加成功啦 ✨');
+        }
+
+        // 2. 渲染菜品菜单
+        function renderDishList() {
+            const container = document.getElementById('dishListContainer');
+            if (dishList.length === 0) {
+                container.innerHTML = '<div class="dish-item">还没有菜品哦，先添加吧～</div>';
+                return;
+            }
+
+            // 遍历菜品生成HTML
+            let html = '';
+            dishList.forEach(dish => {
+                html += `
+                    <div class="dish-item">
+                        <span>${dish.name}</span>
+                        <button onclick="orderDish(${dish.id})">点这个</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // 3. 点菜功能
+        function orderDish(dishId) {
+            // 找到对应的菜品
+            const dish = dishList.find(item => item.id === dishId);
+            if (!dish) return;
+
+            // 生成点菜记录（带时间）
+            const orderRecord = {
+                id: Date.now(),
+                dishName: dish.name,
+                time: new Date().toLocaleString() // 显示点菜时间
+            };
+
+            // 加入已点列表 + 存本地 + 重新渲染
+            orderedList.push(orderRecord);
+            localStorage.setItem('orderedList', JSON.stringify(orderedList));
+            renderOrderedList();
+            alert(`已点【${dish.name}】～`);
+        }
+
+        // 4. 渲染已点菜品
+        function renderOrderedList() {
+            const container = document.getElementById('orderedListContainer');
+            if (orderedList.length === 0) {
+                container.innerHTML = '<div class="ordered-item">还没点菜哦，选一个尝尝～</div>';
+                return;
+            }
+
+            // 遍历已点记录生成HTML
+            let html = '';
+            orderedList.forEach(order => {
+                html += `
+                    <div class="ordered-item">
+                        <span>${order.dishName}</span>
+                        <span>${order.time}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
